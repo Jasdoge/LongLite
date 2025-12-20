@@ -11,7 +11,7 @@ class Comet: public Animation{
 	uint16_t COMET_HUE_DUR = 60e3;
 
 	float COMET_BLOCKPERC;
-	const float COMET_TAILSIZE = COMET_BLOCKPERC*8;   // 3 LED tail 
+	float COMET_TAILSIZE;   // 3 LED tail 
 
 	// Time sparkle started
 	//const uint8_t MAX_SPARKLES = 10;
@@ -43,7 +43,7 @@ class Comet: public Animation{
 		return 0;
 	}
 	
-	void handleComet( tinyNeoPixel leds, const uint8_t i, const uint32_t ms, const float perc, const float huePerc ){
+	void handleComet( tinyNeoPixel leds, const uint8_t i, const uint32_t delta, const float perc, const float huePerc ){
 
 		float out = 0.0;
 		float myPerc = (float)i/Configuration::NUM_LEDS;
@@ -62,8 +62,8 @@ class Comet: public Animation{
 		else if( dist < COMET_TAILSIZE )
 			out = 1.0-dist/COMET_TAILSIZE;
 
-		if( ms-last_sparkle > 200 && fabs(dist) <= COMET_BLOCKPERC && random()%10 == 0 ){
-			addSparkle(ms, i);
+		if( delta-last_sparkle > 200 && fabs(dist) <= COMET_BLOCKPERC && random()%10 == 0 ){
+			addSparkle(delta, i);
 		}
 
 		// r -> y
@@ -103,12 +103,12 @@ class Comet: public Animation{
 			b = 0;
 		}
 
-		const uint32_t sparkleStart = getSparkleStartTime(ms, i);
+		const uint32_t sparkleStart = getSparkleStartTime(delta, i);
 		if( sparkleStart ){
 			
 			r = g = b = 1.0;
-			float delta = 1.0-(float)(ms-sparkleStart)/SPARKLE_DUR;
-			out = delta * ((sin(delta*PI*8)*0.5+0.5)*0.1+0.5);
+			float d = 1.0-(float)(delta-sparkleStart)/SPARKLE_DUR;
+			out = d * ((sin(delta*PI*8)*0.5+0.5)*0.1+0.5);
 
 		}
 
@@ -121,17 +121,16 @@ class Comet: public Animation{
 
 	void onBegin() override{
 		COMET_BLOCKPERC = 1.0/Configuration::NUM_LEDS;
+		COMET_TAILSIZE = COMET_BLOCKPERC*8;
 	}
 
-	void onRender( tinyNeoPixel &leds) override{
+	void onRender( tinyNeoPixel &leds, const uint32_t delta, const bool isA ) override{
 
-		const uint32_t ms = millis()-started;
-		const float perc = (float)(ms%COMET_DUR)/COMET_DUR;
-		const float huePerc = (float)(ms%COMET_HUE_DUR)/COMET_HUE_DUR;
+		const float perc = (float)(delta%COMET_DUR)/COMET_DUR;
+		const float huePerc = (float)(delta%COMET_HUE_DUR)/COMET_HUE_DUR;
 		uint8_t i;
-		// do LEDs A
 		for( i = 0; i < Configuration::NUM_LEDS; ++i )
-			handleComet(leds, i, ms, perc, huePerc);
+			handleComet(leds, i, delta, perc, huePerc);
 			
 	}
 	

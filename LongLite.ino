@@ -5,24 +5,36 @@
 #include "Configuration.h"
 
 //#define USE_SERIAL
+//#define IGNORE_LEDS_B
 #define NO_OFF // Makes the animation permanently on
 
 //std::unique_ptr<Animation> currentAnimation;
 uint8_t pixels[Configuration::NUM_LEDS*3];
-tinyNeoPixel leds = tinyNeoPixel(Configuration::NUM_LEDS, Configuration::PIN_NEO, NEO_GRB, pixels);
+tinyNeoPixel ledsA = tinyNeoPixel(Configuration::NUM_LEDS, Configuration::PIN_NEO_A, NEO_GRB, pixels);
+tinyNeoPixel ledsB = tinyNeoPixel(Configuration::NUM_LEDS, Configuration::PIN_NEO_B, NEO_GRB, pixels);
+
 uint32_t last_update = 0;     // tracks LED refresh rate
 
 
 // Max sparkles
-Comet<10> animation;
+Comet<10> animationA;
+Comet<10> animationB;
 
 
 void selectAnimator(){
-	animation.begin();
+	animationA.begin();
+	animationB.begin();
 }
 
 void render(){
-	animation.render(leds);
+	
+	const uint32_t ms = millis();
+	animationA.render(ledsA, ms, true);
+	ledsA.show();
+
+	animationB.render(ledsB, ms, false);
+	ledsB.show();
+
 }
 
 
@@ -57,7 +69,7 @@ ISR(RTC_PIT_vect){
 		else{
 			last_wake = 0;
 			wake_succ = 0;
-			digitalWrite(Configuration::PIN_NEO,LOW);
+			digitalWrite(Configuration::PIN_NEO_A,LOW);
 			digitalWrite(Configuration::PIN_READING_EN, LOW);
 		}
 		digitalWrite(Configuration::PIN_BIGPP_EN, !on); // P-FET
@@ -123,6 +135,9 @@ ISR(RTC_PIT_vect){
 
 void setup(){
 
+	pinMode(Configuration::PIN_DEBUG_LED, OUTPUT);
+	digitalWrite(Configuration::PIN_DEBUG_LED, HIGH);
+
 	#ifndef NO_OFF
 		while( RTC.STATUS > 0 ){
 		;                                   /* Wait for all register to be synchronized */
@@ -148,12 +163,19 @@ void setup(){
 
 	randomSeed(analogRead(PIN_PB1));      /* Basic random seed */
 
-	pinMode(Configuration::PIN_NEO, OUTPUT);
+	pinMode(Configuration::PIN_NEO_A, OUTPUT);
+	pinMode(Configuration::PIN_NEO_B, OUTPUT);
 		
-	leds.clear();
+	ledsA.clear();
+	ledsB.clear();
 	for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
-		leds.setPixelColor(i, 0, 1, 0);
-	leds.show();
+		ledsA.setPixelColor(i, 0, 1, 0);
+	ledsA.show();
+
+	for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
+		ledsB.setPixelColor(i, 0, 1, 0);
+	ledsB.show();
+
 	delay(1000);
 	
 	#ifdef USE_SERIAL
@@ -166,6 +188,7 @@ void setup(){
 		toggleWake(true);
 	#endif
 	selectAnimator();
+	digitalWrite(Configuration::PIN_DEBUG_LED, LOW);
 
 }
 
@@ -205,8 +228,8 @@ void loop(){
 				r = 0; g = 1;
 			}
 			for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
-				leds.setPixelColor(i,r,g,0);
-			leds.show();
+				ledsA.setPixelColor(i,r,g,0);
+			ledsA.show(); ledsB.show();	// They use the same pixel buffer, so we can show them both at once
 			
 
 		}
@@ -215,7 +238,8 @@ void loop(){
 			
 			toggleReadings(false);
 			leds.clear();
-			leds.show();
+			ledsA.show();
+			ledsB.show();
 			
 			if( button_pressed == 1 )
 				toggleWake(false);
@@ -232,8 +256,6 @@ void loop(){
 		last_update = ms;
 		//handleComet();
 		render();
-		leds.show();
-
 
 	}
 	
