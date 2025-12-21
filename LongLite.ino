@@ -1,6 +1,7 @@
 #include <avr/sleep.h>
 #include <tinyNeoPixel_Static.h>
 #include "Animations/Comet.h"
+#include "Animations/Candycane.h"
 #include "Animations/_Animation.h"
 #include "Configuration.h"
 
@@ -17,8 +18,8 @@ uint32_t last_update = 0;     // tracks LED refresh rate
 
 
 // Max sparkles
-Comet<10> animationA;
-Comet<10> animationB;
+Candycane<10> animationA;
+Candycane<10> animationB;
 
 
 void selectAnimator(){
@@ -251,7 +252,7 @@ void loop(){
 	#endif
 
 	// Always Update LEDs
-	if( ms-last_update > 16 ){
+	if( ms-last_update > 5 ){
 
 		last_update = ms;
 		//handleComet();

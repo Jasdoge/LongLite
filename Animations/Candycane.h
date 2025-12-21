@@ -1,14 +1,14 @@
-#ifndef COMET
-#define COMET
+#ifndef CANDYCANE
+#define CANDYCANE
 #include "_Animation.h"
 #include "../Configuration.h"
 
 template <size_t MAX_SPARKLES>
-class Comet: public Animation{
+class Candycane: public Animation{
 
-	uint8_t MAX_BRIGHTNESS = 100; 
-	uint16_t COMET_DUR = 10e3;
-	uint16_t COMET_HUE_DUR = 60e3;
+	const uint8_t TAIL_PIXEL_LENGTH = 32;
+	uint8_t MAX_BRIGHTNESS = 255; 
+	uint16_t COMET_DUR = 5e3;
 
 	float COMET_BLOCKPERC;
 	float COMET_TAILSIZE;   // 3 LED tail 
@@ -16,7 +16,7 @@ class Comet: public Animation{
 	// Time sparkle started
 	//const uint8_t MAX_SPARKLES = 10;
 
-	uint16_t SPARKLE_DUR = 1e3;
+	uint16_t SPARKLE_DUR = 3e3;
 	uint32_t sparkles[MAX_SPARKLES] = {0};
 	uint16_t sparkles_idx[MAX_SPARKLES] = {0};
 	uint32_t last_sparkle = 0;
@@ -43,10 +43,10 @@ class Comet: public Animation{
 		return 0;
 	}
 	
-	void handleComet( tinyNeoPixel &leds, const uint8_t i, const uint32_t delta, const float perc, const float huePerc ){
+	void animatePixel( tinyNeoPixel &leds, const bool isA, const uint8_t i, const uint32_t delta, const float perc ){
 
 		float out = 0.0;
-		float myPerc = (float)i/Configuration::NUM_LEDS;
+		float myPerc = 1.0-(float)i/Configuration::NUM_LEDS;
 		float dist = perc-myPerc;
 		// We're ahead
 		if( dist < 0 ){
@@ -65,43 +65,13 @@ class Comet: public Animation{
 		if( delta-last_sparkle > 200 && fabs(dist) <= COMET_BLOCKPERC && random()%10 == 0 ){
 			addSparkle(delta, i);
 		}
+		
+		float r = 1.0;
+		float g = 1.0;
+		float b = 1.0;
+		if( isA )
+			g = b = 0.0;
 
-		// r -> y
-		const uint8_t hueSteps = 6;
-		const float hueStep = 1.0/hueSteps;
-		float r = 1.0, g = huePerc*hueSteps, b = 0.0;
-		// y -> g
-		if( huePerc > hueStep ){
-			g = 1.0;
-			r = 1.0-(huePerc-hueStep)*hueSteps;
-		}
-
-		// g -> cyan
-		if( huePerc > hueStep*2 ){
-			r = 0;
-			g = 1.0;
-			b = (huePerc-hueStep*2)*hueSteps;
-		}
-
-		// cyan -> b
-		if( huePerc > hueStep*3 ){
-			r = 0;
-			g = 1.0-(huePerc-hueStep*3)*hueSteps;
-			b = 1.0;
-		}
-
-		// b -> purple
-		if( huePerc > hueStep*4 ){
-			r = (huePerc-hueStep*4)*hueSteps;
-			g = 0;
-			b = 1.0;
-		}
-
-		// purple -> r
-		if( huePerc > hueStep*5 ){
-			g = 1.0-(huePerc-hueStep*5)*hueSteps;
-			b = 0;
-		}
 
 		const uint32_t sparkleStart = getSparkleStartTime(delta, i);
 		if( sparkleStart ){
@@ -113,6 +83,8 @@ class Comet: public Animation{
 		}
 
 		out = out*out*out;
+		if( out < 1.0/MAX_BRIGHTNESS )
+			out = 1.0/MAX_BRIGHTNESS;
 
 		leds.setPixelColor(i, MAX_BRIGHTNESS*out*r,MAX_BRIGHTNESS*out*g,MAX_BRIGHTNESS*out*b);
 
@@ -121,16 +93,18 @@ class Comet: public Animation{
 
 	void onBegin() override{
 		COMET_BLOCKPERC = 1.0/Configuration::NUM_LEDS;
-		COMET_TAILSIZE = COMET_BLOCKPERC*8;
+		COMET_TAILSIZE = COMET_BLOCKPERC*TAIL_PIXEL_LENGTH;
 	}
 
 	void onRender( tinyNeoPixel &leds, const uint32_t delta, const bool isA ) override{
 
-		const float perc = (float)(delta%COMET_DUR)/COMET_DUR;
-		const float huePerc = (float)(delta%COMET_HUE_DUR)/COMET_HUE_DUR;
+		uint32_t d = delta;
+		if( isA )
+			d += COMET_DUR/2;
+		float perc = (float)(d%COMET_DUR)/COMET_DUR;
 		uint8_t i;
 		for( i = 0; i < Configuration::NUM_LEDS; ++i )
-			handleComet(leds, i, delta, perc, huePerc);
+			animatePixel(leds, isA, i, delta, perc);
 			
 	}
 	
