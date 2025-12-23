@@ -3,7 +3,7 @@
 
 namespace Configuration{
 
-	const uint8_t NUM_LEDS = 150;
+	const uint8_t NUM_LEDS = 100;
 
 
 	const uint8_t PIN_NEO_A = PIN_PA5;

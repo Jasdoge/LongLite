@@ -2,11 +2,12 @@
 #include <tinyNeoPixel_Static.h>
 #include "Animations/Comet.h"
 #include "Animations/Candycane.h"
+#include "Animations/Motes.h"
 #include "Animations/_Animation.h"
 #include "Configuration.h"
 
 //#define USE_SERIAL
-//#define IGNORE_LEDS_B
+#define IGNORE_LEDS_B
 #define NO_OFF // Makes the animation permanently on
 
 //std::unique_ptr<Animation> currentAnimation;
@@ -18,13 +19,15 @@ uint32_t last_update = 0;     // tracks LED refresh rate
 
 
 // Max sparkles
-Candycane<10> animationA;
-Candycane<10> animationB;
+Motes<10> animationA;
+Motes<10> animationB;
 
 
 void selectAnimator(){
 	animationA.begin();
+	#ifndef IGNORE_LEDS_B
 	animationB.begin();
+	#endif
 }
 
 void render(){
@@ -32,10 +35,10 @@ void render(){
 	const uint32_t ms = millis();
 	animationA.render(ledsA, ms, true);
 	ledsA.show();
-
+	#ifndef IGNORE_LEDS_B
 	animationB.render(ledsB, ms, false);
 	ledsB.show();
-
+	#endif
 }
 
 
@@ -172,10 +175,11 @@ void setup(){
 	for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
 		ledsA.setPixelColor(i, 0, 1, 0);
 	ledsA.show();
-
+	#ifndef IGNORE_LEDS_B
 	for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
 		ledsB.setPixelColor(i, 0, 1, 0);
 	ledsB.show();
+	#endif
 
 	delay(1000);
 	
@@ -230,8 +234,10 @@ void loop(){
 			}
 			for( uint8_t i = 0; i < Configuration::NUM_LEDS; ++i )
 				ledsA.setPixelColor(i,r,g,0);
-			ledsA.show(); ledsB.show();	// They use the same pixel buffer, so we can show them both at once
-			
+			ledsA.show(); 
+			#ifndef IGNORE_LEDS_B
+			ledsB.show();	// They use the same pixel buffer, so we can show them both at once
+			#endif
 
 		}
 		// Handle button release
@@ -240,7 +246,9 @@ void loop(){
 			toggleReadings(false);
 			leds.clear();
 			ledsA.show();
+			#ifndef IGNORE_LEDS_B
 			ledsB.show();
+			#endif
 			
 			if( button_pressed == 1 )
 				toggleWake(false);
@@ -252,7 +260,7 @@ void loop(){
 	#endif
 
 	// Always Update LEDs
-	if( ms-last_update > 5 ){
+	if( ms-last_update > 16 ){
 
 		last_update = ms;
 		//handleComet();

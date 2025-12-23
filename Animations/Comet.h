@@ -24,19 +24,20 @@ class Comet: public Animation{
 
 	
 	void addSparkle( const uint32_t ms, const uint16_t idx ){
-		for( uint8_t i = 0; i < 10; i++ ){
+
+		for( uint8_t i = 0; i < MAX_SPARKLES; ++i ){
 			
 			if( !sparkles[i] || ms-sparkles[i] > SPARKLE_DUR ){
-			sparkles_idx[i] = idx;
-			sparkles[i] = ms+50+random(50);
-			return;
+				sparkles_idx[i] = idx;
+				sparkles[i] = ms+50+random(50);
+				return;
 			}
 
 		}
 	}
 
 	uint32_t getSparkleStartTime( const uint32_t ms, const uint8_t idx ){
-		for( uint8_t i = 0; i < 10; i++ ){
+		for( uint8_t i = 0; i < MAX_SPARKLES; i++ ){
 			if( sparkles[i] && sparkles_idx[i] == idx && ms-sparkles[i] < SPARKLE_DUR )
 			return sparkles[i];
 		}
